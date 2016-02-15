@@ -49,7 +49,6 @@ class DialogOperator(bpy.types.Operator):
         return {'FINISHED'}
     
     def invoke(self, context, event):
-        global image_url
         self.url = image_url
         return context.window_manager.invoke_props_dialog(self)
     
