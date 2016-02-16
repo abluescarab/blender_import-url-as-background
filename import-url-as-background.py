@@ -18,7 +18,7 @@ image_url = "http://"
 button_text = "Import URL"
 
 def run(url):
-    try:        
+    try:
         temp_file = os.path.dirname(os.path.dirname(__file__)) + "\\" + ntpath.basename(url)
         request = urllib.request.Request(url)
         request.add_header('User-Agent', 'Mozilla/5.0')
@@ -42,16 +42,7 @@ def download_file(url, path):
     f = open(path, "wb")
     f.write(urllib.request.urlopen(url).read())
     f.close()
-#    
-#    
-#    chunk = 4096
-#    f = open(path, "w");
-#    while True:
-#        data = url.read(chunk)
-#        if not data:
-#            break
-#        f.write(data)
-
+    
 class DialogOperator(bpy.types.Operator):
     bl_idname = "object.dialog_operator"
     bl_label = button_text
