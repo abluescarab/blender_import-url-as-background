@@ -6,4 +6,5 @@ This is my first Blender addon, so if you run into any bugs, either let me know 
 ![Preview](./screenshot-1.png)
 
 ## Credits
-[Popup dialog tutorial](http://wiki.blender.org/index.php/Dev:Py/Scripts/Cookbook/Code_snippets/Interface#A_popup_dialog) in the Blender Cookbook
+* [Popup dialog tutorial](http://wiki.blender.org/index.php/Dev:Py/Scripts/Cookbook/Code_snippets/Interface#A_popup_dialog) in the Blender Cookbook
+* [This Stack Overflow answer](http://stackoverflow.com/a/3042778/567983)
