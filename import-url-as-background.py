@@ -1,78 +1,103 @@
+import os
+import ntpath
+import urllib.request
+import bpy
+import tempfile
+
+
 bl_info = {
-    "name": "Import URL as Background",
-    "description": "Imports an image URL as a background in your scene.",
+    "name": "Import URL as Image",
+    "description": "Imports an image URL into your scene.",
     "category": "Import-Export",
     "author": "Alana Gilston",
-    "version": (1, 0),
-    "blender": (2, 76, 0),
-    "location": "View3D > Properties panel > Background Images > Import URL",
+    "version": (2, 0),
+    "blender": (2, 80, 0),
+    "location": "View3D > Properties panel > Tools > Import URL as Image",
     "warning": "",
     "wiki_url": "",
     "support": "COMMUNITY"
 }
 
-import bpy, urllib.request, ntpath, os
-from bpy.props import *
 
-image_url = "http://"
-button_text = "Import URL"
-
-def run(url):
+def get_file(url, temp_file):
     try:
-        temp_file = os.path.dirname(os.path.dirname(__file__)) + "\\" + ntpath.basename(url)
         request = urllib.request.Request(url)
         request.add_header('User-Agent', 'Mozilla/5.0')
-        download_file(request, temp_file)
+
+        file = open(temp_file, "wb")
+        file.write(urllib.request.urlopen(request).read())
+        file.close()
+
         img = bpy.data.images.load(temp_file)
         img.pack()
         os.remove(temp_file)
     except Exception as e:
         raise NameError("Cannot load image: {0}".format(e))
 
-    for area in bpy.context.screen.areas:
-        if area.type == 'VIEW_3D':
-            space_data = area.spaces.active
-            space_data.show_background_images = True
-            background = space_data.background_images.new()
-            background.image = img
-            background.show_background_image = True
-            break
 
-def download_file(url, path):
-    f = open(path, "wb")
-    f.write(urllib.request.urlopen(url).read())
-    f.close()
-    
-class DialogOperator(bpy.types.Operator):
-    bl_idname = "object.dialog_operator"
-    bl_label = button_text
-    
-    url = StringProperty(name="URL")
-    
-    def execute(self, context):
-        message = "%s" % (self.url)
-        self.report({'INFO'}, message)
-        run(self.url)
-        return {'FINISHED'}
-    
+class ImportPreferences(bpy.types.AddonPreferences):
+    bl_idname = __name__
+
+    file_path: bpy.props.StringProperty(
+        name="Temp file path",
+        subtype="FILE_PATH",
+        default=tempfile.gettempdir()
+    )
+
+    def draw(self, context):
+        self.layout.prop(self, "file_path")
+
+
+class ImportButton(bpy.types.Operator):
+    bl_idname = "object.import_url_as_image"
+    bl_label = "Import"
+    bl_description = "Import valid URL as image"
+    bl_options = {"REGISTER", "UNDO"}
+
+    url: bpy.props.StringProperty(
+        name="URL",
+        description="URL to import",
+        default="http://"
+    )
+
     def invoke(self, context, event):
-        self.url = image_url
+        self.url = "http://"
         return context.window_manager.invoke_props_dialog(self)
-    
-def import_url_as_background(self, context):
-    layout = self.layout
-    layout.operator("object.dialog_operator")
-    
+
+    def execute(self, context):
+        basename = os.path.basename(self.url)
+        temp_file = os.path.join(
+            context.preferences.addons[__name__].preferences.file_path,
+            basename
+        )
+        self.report({"INFO"}, "Importing %s" % basename)
+        get_file(self.url, temp_file)
+        return {"FINISHED"}
+
+
+class VIEW3D_PT_ImportUrl(bpy.types.Panel):
+    bl_label = "Import URL as Image"
+    bl_idname = "VIEW3D_PT_import_url_as_image"
+    bl_space_type = "IMAGE_EDITOR"
+    bl_region_type = "UI"
+    bl_category = "Import/Export"
+
+    def draw(self, context):
+        col = self.layout.column(align=True)
+        col.operator(ImportButton.bl_idname)
+
+
 def register():
-    bpy.utils.register_class(DialogOperator)
-    bpy.types.VIEW3D_PT_background_image.prepend(import_url_as_background)
-    
+    bpy.utils.register_class(ImportPreferences)
+    bpy.utils.register_class(ImportButton)
+    bpy.utils.register_class(VIEW3D_PT_ImportUrl)
+
+
 def unregister():
-    bpy.utils.unregister_class(DialogOperator)
-    bpy.types.VIEW3D_PT_background_image.remove(import_url_as_background)
-    
-def load():
-    bpy.ops.object.dialog_operator('INVOKE_DEFAULT')
+    bpy.utils.unregister_class(ImportPreferences)
+    bpy.utils.unregister_class(ImportButton)
+    bpy.utils.unregister_class(VIEW3D_PT_ImportUrl)
+
 
 if __name__ == "__main__":
     register()
