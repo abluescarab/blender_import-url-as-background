@@ -10,9 +10,9 @@ bl_info = {
     "description": "Imports an image URL into your scene.",
     "category": "Import-Export",
     "author": "Alana Gilston",
-    "version": (2, 0),
+    "version": (2, 1),
     "blender": (2, 80, 0),
-    "location": "View3D > Properties panel > Tools > Import URL as Image",
+    "location": "Image Editor > Properties panel > Import/Export > Import URL as Image",
     "warning": "",
     "wiki_url": "",
     "support": "COMMUNITY"
