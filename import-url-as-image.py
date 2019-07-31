@@ -12,7 +12,7 @@ bl_info = {
     "author": "Alana Gilston",
     "version": (2, 1),
     "blender": (2, 80, 0),
-    "location": "Image Editor > Properties panel > Import/Export > Import URL as Image",
+    "location": "View 3D > Properties panel > Import/Export > Import URL as Image",
     "warning": "",
     "wiki_url": "",
     "support": "COMMUNITY"
