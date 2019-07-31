@@ -19,7 +19,7 @@ bl_info = {
 }
 
 
-def get_file(url, temp_file):
+def get_file(url, temp_file, empty_name):
     try:
         request = urllib.request.Request(url)
         request.add_header('User-Agent', 'Mozilla/5.0')
@@ -33,6 +33,11 @@ def get_file(url, temp_file):
         img = bpy.data.images.load(temp_file)
         img.pack()
         os.remove(temp_file)
+
+        img_empty = bpy.data.objects.new(empty_name, None)
+        bpy.context.scene.collection.objects.link(img_empty)
+        img_empty.empty_display_type = "IMAGE"
+        img_empty.data = img
     except Exception as e:
         raise NameError("Cannot load image: {0}".format(e))
 
@@ -67,20 +72,24 @@ class ImportButton(bpy.types.Operator):
         return context.window_manager.invoke_props_dialog(self)
 
     def execute(self, context):
-        basename = os.path.basename(self.url)
-        temp_file = os.path.join(
-            context.preferences.addons[__name__].preferences.file_path,
-            basename
-        )
-        self.report({"INFO"}, "Importing %s" % basename)
-        get_file(self.url, temp_file)
+        if not self.url or self.url == "http://":
+            self.report({"ERROR"}, "Failed to import: no URL provided")
+        else:
+            basename = os.path.basename(self.url)
+            temp_file = os.path.join(
+                context.preferences.addons[__name__].preferences.file_path,
+                basename
+            )
+            self.report({"INFO"}, "Importing %s" % basename)
+            get_file(self.url, temp_file, basename)
+
         return {"FINISHED"}
 
 
 class VIEW3D_PT_ImportUrl(bpy.types.Panel):
     bl_label = "Import URL as Image"
     bl_idname = "VIEW3D_PT_import_url_as_image"
-    bl_space_type = "IMAGE_EDITOR"
+    bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "Import/Export"
 
