@@ -24,8 +24,10 @@ def get_file(url, temp_file):
         request = urllib.request.Request(url)
         request.add_header('User-Agent', 'Mozilla/5.0')
 
+        read_request = urllib.request.urlopen(request).read()
+
         file = open(temp_file, "wb")
-        file.write(urllib.request.urlopen(request).read())
+        file.write(read_request)
         file.close()
 
         img = bpy.data.images.load(temp_file)
