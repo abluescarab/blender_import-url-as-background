@@ -9,8 +9,8 @@ bl_info = {
     "name": "Import URL as Image",
     "description": "Imports an image URL into your scene.",
     "category": "Import-Export",
-    "author": "Alana Gilston",
-    "version": (2, 1),
+    "author": "abluescarab",
+    "version": (3, 0),
     "blender": (2, 80, 0),
     "location": "View 3D > Properties panel > Import/Export > Import URL as Image",
     "warning": "",
@@ -19,7 +19,17 @@ bl_info = {
 }
 
 
-def get_file(url, temp_file, empty_name):
+def add_to_collection(collection_name):
+    if collection_name in bpy.data.collections:
+        collection = bpy.data.collections[collection_name]
+    else:
+        collection = bpy.data.collections.new(collection_name)
+        bpy.context.scene.collection.children.link(collection)
+
+    return collection
+
+
+def get_file(url, temp_file, empty_name, collection):
     try:
         request = urllib.request.Request(url)
         request.add_header('User-Agent', 'Mozilla/5.0')
@@ -35,24 +45,43 @@ def get_file(url, temp_file, empty_name):
         os.remove(temp_file)
 
         img_empty = bpy.data.objects.new(empty_name, None)
-        bpy.context.scene.collection.objects.link(img_empty)
+
+        if collection:
+            collection.objects.link(img_empty)
+        else:
+            bpy.context.scene.collection.objects.link(img_empty)
+
         img_empty.empty_display_type = "IMAGE"
         img_empty.data = img
+
+        # deselect all objects and select new empty
+        bpy.ops.object.select_all(action="DESELECT")
+        bpy.context.view_layer.objects.active = img_empty
+        img_empty.select_set(True)
     except Exception as e:
         raise NameError("Cannot load image: {0}".format(e))
 
 
-class ImportPreferences(bpy.types.AddonPreferences):
-    bl_idname = __name__
-
-    file_path: bpy.props.StringProperty(
-        name="Temp file path",
-        subtype="FILE_PATH",
+class ImportProperties(bpy.types.PropertyGroup):
+    temp_path: bpy.props.StringProperty(
+        name="Temporary File Path",
+        subtype="DIR_PATH",
+        description="Temporary file storage path",
         default=tempfile.gettempdir()
     )
 
-    def draw(self, context):
-        self.layout.prop(self, "file_path")
+    add_to_collection: bpy.props.BoolProperty(
+        name="Add to Collection",
+        description="Add to a collection or place in the scene directly",
+        default=True
+    )
+
+    collection_name: bpy.props.StringProperty(
+        name="Collection",
+        subtype="NONE",
+        description="Collection to add to",
+        default="Imported Images"
+    )
 
 
 class ImportButton(bpy.types.Operator):
@@ -75,13 +104,19 @@ class ImportButton(bpy.types.Operator):
         if not self.url or self.url == "http://":
             self.report({"ERROR"}, "Failed to import: no URL provided")
         else:
+            tool = context.scene.import_url_as_image_tool
             basename = os.path.basename(self.url)
-            temp_file = os.path.join(
-                context.preferences.addons[__name__].preferences.file_path,
-                basename
-            )
+
+            temp_file = os.path.join(tool.temp_path, basename)
+            collection_name = tool.collection_name
+
             self.report({"INFO"}, "Importing %s" % basename)
-            get_file(self.url, temp_file, basename)
+
+            collection = (add_to_collection(collection_name)
+                            if tool.add_to_collection
+                            else None)
+
+            get_file(self.url, temp_file, basename, collection)
 
         return {"FINISHED"}
 
@@ -94,20 +129,53 @@ class VIEW3D_PT_ImportUrl(bpy.types.Panel):
     bl_category = "Import/Export"
 
     def draw(self, context):
+        tool = context.scene.import_url_as_image_tool
         col = self.layout.column(align=True)
-        col.operator(ImportButton.bl_idname)
+
+        row = col.row(align=True)
+        row.operator(ImportButton.bl_idname)
+
+        col.separator()
+
+        row = col.row(align=True)
+        row.prop(tool, "add_to_collection")
+
+        row = col.row(align=True)
+        row.prop(tool, "collection_name", text="")
+        row.active = tool.add_to_collection
+
+        col.separator()
+
+        row = col.row(align=True)
+        row.label(text="Temporary File Path:")
+
+        row = col.row(align=True)
+        row.prop(tool, "temp_path", text="")
+
+
+classes = (
+    ImportProperties,
+    ImportButton,
+    VIEW3D_PT_ImportUrl
+)
 
 
 def register():
-    bpy.utils.register_class(ImportPreferences)
-    bpy.utils.register_class(ImportButton)
-    bpy.utils.register_class(VIEW3D_PT_ImportUrl)
+    from bpy.utils import register_class
+    for cl in classes:
+        register_class(cl)
+
+    bpy.types.Scene.import_url_as_image_tool = (
+        bpy.props.PointerProperty(type=ImportProperties)
+    )
 
 
 def unregister():
-    bpy.utils.unregister_class(ImportPreferences)
-    bpy.utils.unregister_class(ImportButton)
-    bpy.utils.unregister_class(VIEW3D_PT_ImportUrl)
+    from bpy.utils import unregister_class
+    for cl in reversed(classes):
+        unregister_class(cl)
+
+    del bpy.types.Scene.import_url_as_image_tool
 
 
 if __name__ == "__main__":
