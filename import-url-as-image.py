@@ -10,7 +10,7 @@ bl_info = {
     "description": "Imports an image URL into your scene.",
     "category": "Import-Export",
     "author": "abluescarab",
-    "version": (3, 0),
+    "version": (3, 1),
     "blender": (2, 80, 0),
     "location": "View 3D > Properties panel > Import/Export > Import URL as Image",
     "warning": "",
