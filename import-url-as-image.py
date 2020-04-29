@@ -26,6 +26,9 @@ def add_to_collection(collection_name):
         collection = bpy.data.collections.new(collection_name)
         bpy.context.scene.collection.children.link(collection)
 
+    (bpy.context.window.view_layer.layer_collection.children[collection_name]
+        .exclude) = False
+
     return collection
 
 
