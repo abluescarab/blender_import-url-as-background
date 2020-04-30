@@ -10,7 +10,7 @@ bl_info = {
     "description": "Imports an image URL into your scene.",
     "category": "Import-Export",
     "author": "abluescarab",
-    "version": (3, 1),
+    "version": (3, 1, 1),
     "blender": (2, 80, 0),
     "location": "View 3D > Properties panel > Import/Export > Import URL as Image",
     "warning": "",
@@ -58,7 +58,8 @@ def get_file(url, temp_file, empty_name, collection):
         img_empty.data = img
 
         # deselect all objects and select new empty
-        if bpy.context.active_object.mode != "OBJECT":
+        if (bpy.context.active_object and
+            bpy.context.active_object.mode != "OBJECT"):
             bpy.ops.object.mode_set(mode="OBJECT")
 
         bpy.ops.object.select_all(action="DESELECT")
